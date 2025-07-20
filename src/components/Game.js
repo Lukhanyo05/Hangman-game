@@ -1,115 +1,128 @@
 // src/components/Game.js
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import WordDisplay from "./WordDisplay";
 import Keyboard from "./Keyboard";
 import HangmanFigure from "./HangmanFigure";
 import GameStatus from "./GameStatus";
 import HelpModal from "./HelpModal";
 
-class Game extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      word: this.getRandomWord(),
-      guessedLetters: [],
-      maxAttempts: 6,
-      gameStatus: "playing", // 'playing', 'won', 'lost'
-      showHelp: false,
-    };
-  }
-
-  wordList = [
+/**
+ * Main Game Component - Manages all game state and logic
+ * Created by: Lukhanyo
+ * Features:
+ * - Random word selection
+ * - Game state management
+ * - Win/lose conditions
+ */
+const Game = () => {
+  // Personal touch: Custom word list focused on programming terms
+  const wordList = [
     "REACT",
-    "JAVASCRIPT",
-    "DEVELOPER",
-    "HANGMAN",
-    "PROGRAMMING",
+    "HOOKS",
+    "REDUX",
+    "ROUTER",
     "COMPONENT",
-    "STATE",
+    "FIBER",
+    "VIRTUALDOM",
     "PROPS",
+    "STATE",
+    "EFFECT",
+    "Systems",
+    "FUNCTION",
+    "ASYNC",
+    "PROMISE",
   ];
 
-  getRandomWord = () => {
-    const randomIndex = Math.floor(Math.random() * this.wordList.length);
-    return this.wordList[randomIndex];
+  // Game state variables
+  const [word, setWord] = useState("");
+  const [guessedLetters, setGuessedLetters] = useState([]);
+  const [gameStatus, setGameStatus] = useState("playing"); // 'playing', 'won', 'lost'
+  const [showHelp, setShowHelp] = useState(false);
+  const maxAttempts = 6; // Classic hangman rules
+
+  // Initialize game with a random word
+  useEffect(() => {
+    resetGame();
+  }, []);
+
+  /**
+   * Selects a random word from wordList
+   * @returns {string} Random word in uppercase
+   */
+  const getRandomWord = () => {
+    const randomIndex = Math.floor(Math.random() * wordList.length);
+    return wordList[randomIndex];
   };
 
-  handleGuess = (letter) => {
-    if (
-      this.state.gameStatus !== "playing" ||
-      this.state.guessedLetters.includes(letter)
-    ) {
-      return;
-    }
+  /**
+   * Handles letter guess logic
+   * @param {string} letter - The guessed letter
+   */
+  const handleGuess = (letter) => {
+    if (gameStatus !== "playing" || guessedLetters.includes(letter)) return;
 
-    const newGuessedLetters = [...this.state.guessedLetters, letter];
-    const isCorrect = this.state.word.includes(letter);
+    const newGuessedLetters = [...guessedLetters, letter];
+    setGuessedLetters(newGuessedLetters);
 
-    // Check win/lose conditions
-    const isWon = this.state.word
+    // Check win condition
+    const isWon = word
       .split("")
       .every((ltr) => newGuessedLetters.includes(ltr));
 
-    const attemptsLeft =
-      this.state.maxAttempts -
-      newGuessedLetters.filter((ltr) => !this.state.word.includes(ltr)).length;
+    // Check lose condition
+    const wrongGuesses = newGuessedLetters.filter((ltr) => !word.includes(ltr));
+    const isLost = wrongGuesses.length >= maxAttempts;
 
-    const isLost = attemptsLeft <= 0;
-
-    this.setState({
-      guessedLetters: newGuessedLetters,
-      gameStatus: isWon ? "won" : isLost ? "lost" : "playing",
-    });
+    // Update game status
+    if (isWon) setGameStatus("won");
+    else if (isLost) setGameStatus("lost");
   };
 
-  resetGame = () => {
-    this.setState({
-      word: this.getRandomWord(),
-      guessedLetters: [],
-      gameStatus: "playing",
-    });
+  /**
+   * Resets all game state for a new game
+   */
+  const resetGame = () => {
+    setWord(getRandomWord());
+    setGuessedLetters([]);
+    setGameStatus("playing");
   };
 
-  toggleHelp = () => {
-    this.setState((prevState) => ({ showHelp: !prevState.showHelp }));
+  /**
+   * Toggles help modal visibility
+   */
+  const toggleHelp = () => {
+    setShowHelp(!showHelp);
   };
 
-  render() {
-    const { word, guessedLetters, maxAttempts, gameStatus, showHelp } =
-      this.state;
-    const wrongGuesses = guessedLetters.filter(
-      (letter) => !word.includes(letter)
-    );
-    const attemptsLeft = maxAttempts - wrongGuesses.length;
+  // Calculate wrong guesses and attempts left
+  const wrongGuesses = guessedLetters.filter(
+    (letter) => !word.includes(letter)
+  );
+  const attemptsLeft = maxAttempts - wrongGuesses.length;
 
-    return (
-      <div className="game-container">
-        <h1>React Hangman</h1>
+  return (
+    <div className="game-container">
+      <h1>Lukhanyo's React Hangman</h1>
 
-        <HangmanFigure wrongGuesses={wrongGuesses.length} />
+      <HangmanFigure wrongGuesses={wrongGuesses.length} />
 
-        <WordDisplay word={word} guessedLetters={guessedLetters} />
+      <WordDisplay word={word} guessedLetters={guessedLetters} />
 
-        <GameStatus
-          gameStatus={gameStatus}
-          word={word}
-          attemptsLeft={attemptsLeft}
-          onReset={this.resetGame}
-          onHelp={this.toggleHelp}
-        />
+      <GameStatus
+        gameStatus={gameStatus}
+        word={word}
+        attemptsLeft={attemptsLeft}
+        onReset={resetGame}
+        onHelp={toggleHelp}
+      />
 
-        {gameStatus === "playing" && (
-          <Keyboard
-            guessedLetters={guessedLetters}
-            onGuess={this.handleGuess}
-            disabled={gameStatus !== "playing"}
-          />
-        )}
+      {gameStatus === "playing" && (
+        <Keyboard guessedLetters={guessedLetters} onGuess={handleGuess} />
+      )}
 
-        <HelpModal isOpen={showHelp} onClose={this.toggleHelp} />
-      </div>
-    );
-  }
-}
+      <HelpModal isOpen={showHelp} onClose={toggleHelp} />
+    </div>
+  );
+};
 
 export default Game;
